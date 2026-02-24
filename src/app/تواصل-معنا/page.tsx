@@ -1,3 +1,5 @@
+"use client";
+
 import { Phone, Mail, MapPin, Clock } from 'lucide-react';
 import { SITE_CONFIG } from '@/app/config';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +14,16 @@ export const metadata: Metadata = {
     alternates: {
       canonical: '/تواصل-معنا',
     },
+};
+
+const reportConversion = () => {
+    const gtag = (window as any).gtag;
+    if (typeof gtag === 'function') {
+        gtag('event', 'conversion', {
+            'send_to': 'AW-17974591338/kIrgCKDatP4bEOr--fpC',
+            'transaction_id': ''
+        });
+    }
 };
 
 const contactDetails = [
@@ -55,7 +67,7 @@ export default function ContactPage() {
                 <div>
                   <h3 className="font-semibold">{detail.title}</h3>
                   {detail.href ? (
-                    <a href={detail.href} className="text-muted-foreground hover:text-primary transition-colors">
+                    <a href={detail.href} className="text-muted-foreground hover:text-primary transition-colors" onClick={reportConversion}>
                       {detail.value}
                     </a>
                   ) : (

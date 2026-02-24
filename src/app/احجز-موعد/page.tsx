@@ -1,3 +1,5 @@
+"use client";
+
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +13,16 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/احجز-موعد',
   },
+};
+
+const reportConversion = () => {
+    const gtag = (window as any).gtag;
+    if (typeof gtag === 'function') {
+        gtag('event', 'conversion', {
+            'send_to': 'AW-17974591338/kIrgCKDatP4bEOr--fpC',
+            'transaction_id': ''
+        });
+    }
 };
 
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -42,7 +54,7 @@ export default function BookingPage() {
                         <p className="text-muted-foreground mt-2">
                             فريقنا جاهز للرد على استفساراتك وتأكيد حجزك عبر واتساب.
                         </p>
-                        <Button asChild size="lg" className="mt-8 bg-green-500 hover:bg-green-600 text-white font-bold text-lg w-full max-w-xs">
+                        <Button asChild size="lg" className="mt-8 bg-green-500 hover:bg-green-600 text-white font-bold text-lg w-full max-w-xs" onClick={reportConversion}>
                             <Link href={whatsappLink} target="_blank" rel="noopener noreferrer">
                                 <WhatsAppIcon className="ml-3 h-6 w-6" />
                                 احجز الآن عبر واتساب

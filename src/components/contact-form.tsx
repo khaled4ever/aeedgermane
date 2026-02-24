@@ -45,6 +45,16 @@ export function ContactForm() {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
     console.log(values);
+
+    // Fire conversion event
+    const gtag = (window as any).gtag;
+    if (typeof gtag === 'function') {
+        gtag('event', 'conversion', {
+            'send_to': 'AW-17974591338/kIrgCKDatP4bEOr--fpC',
+            'transaction_id': ''
+        });
+    }
+    
     setIsSubmitting(false);
     setIsSubmitted(true);
     form.reset();

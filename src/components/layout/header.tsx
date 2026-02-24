@@ -22,12 +22,27 @@ import { SITE_CONFIG } from "@/app/config";
 import { Logo } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
+const reportConversion = () => {
+    const gtag = (window as any).gtag;
+    if (typeof gtag === 'function') {
+        gtag('event', 'conversion', {
+            'send_to': 'AW-17974591338/kIrgCKDatP4bEOr--fpC',
+            'transaction_id': ''
+        });
+    }
+};
+
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
   const prefilledMessage = "أهلاً مركز الرشود، أرغب في حجز موعد صيانة لسيارتي.";
   const whatsappLink = `https://wa.me/966${SITE_CONFIG.site.whatsapp.substring(1)}?text=${encodeURIComponent(prefilledMessage)}`;
+  
+  const handleMobileBookingClick = () => {
+    reportConversion();
+    setIsMobileMenuOpen(false);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -74,7 +89,7 @@ export function Header() {
         </nav>
 
         <div className="flex flex-1 items-center justify-end gap-2 md:ml-auto">
-          <Button asChild className="hidden md:flex">
+          <Button asChild className="hidden md:flex" onClick={reportConversion}>
             <Link href={whatsappLink} target="_blank" rel="noopener noreferrer">احجز موعد</Link>
           </Button>
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -126,8 +141,8 @@ export function Header() {
                   )}
                 </nav>
                 <div className="mt-auto">
-                  <Button asChild size="lg" className="w-full">
-                    <Link href={whatsappLink} target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)}>احجز موعد</Link>
+                  <Button asChild size="lg" className="w-full" onClick={handleMobileBookingClick}>
+                    <Link href={whatsappLink} target="_blank" rel="noopener noreferrer">احجز موعد</Link>
                   </Button>
                 </div>
               </div>
