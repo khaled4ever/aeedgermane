@@ -23,4 +23,4 @@ if (!admin.apps.length && process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
 // If initialization failed, this will be null, and the middleware will be bypassed.
 const firestoreAdmin = admin.apps.length ? admin.firestore() : null;
 
-export { firestoreAdmin };
+export { admin, firestoreAdmin };
