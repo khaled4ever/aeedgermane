@@ -1,0 +1,76 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hero-1",
+      "description": "A modern car in a workshop",
+      "imageUrl": "https://images.unsplash.com/photo-1570129476815-ba368ac77013?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Y2FyJTIwd29ya3Nob3B8ZW58MHx8fHwxNzcxODMzMzczfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car workshop"
+    },
+    {
+      "id": "about-us",
+      "description": "Team of mechanics working in a clean workshop",
+      "imageUrl": "https://images.unsplash.com/photo-1758887698919-a29b6091c54a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxtZWNoYW5pYyUyMHRlYW18ZW58MHx8fHwxNzcxODMzMzczfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "mechanic team"
+    },
+    {
+      "id": "contact-us-map",
+      "description": "A map showing a location",
+      "imageUrl": "https://images.unsplash.com/photo-1532154066703-3973764c81fe?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxtYXAlMjBsb2NhdGlvbnxlbnwwfHx8fDE3NzE3NzM4ODV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "map location"
+    },
+    {
+      "id": "brand-page-hero",
+      "description": "A luxury car on the road",
+      "imageUrl": "https://images.unsplash.com/photo-1485291571150-772bcfc10da5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxsdXh1cnklMjBjYXJ8ZW58MHx8fHwxNzcxODI1NTkwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "luxury car"
+    },
+    {
+      "id": "german-cars-index",
+      "description": "A collection of German cars",
+      "imageUrl": "https://images.unsplash.com/photo-1680733162779-98b8a99a7828?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxnZXJtYW4lMjBjYXJzfGVufDB8fHx8MTc3MTgzMzM3M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "german cars"
+    },
+    {
+      "id": "european-cars-index",
+      "description": "A collection of European cars",
+      "imageUrl": "https://images.unsplash.com/photo-1731108477527-0435190f6263?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxldXJvcGVhbiUyMGNhcnN8ZW58MHx8fHwxNzcxODMzMzc0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "european cars"
+    },
+    {
+      "id": "service-engine",
+      "description": "Car engine close-up",
+      "imageUrl": "https://xn--ogbhrq.vip/wp-content/uploads/2026/02/6-1-1.png",
+      "imageHint": "car engine"
+    },
+    {
+      "id": "service-brakes",
+      "description": "Car brakes and wheel",
+      "imageUrl": "https://xn--ogbhrq.vip/wp-content/uploads/2026/02/breack.png",
+      "imageHint": "car brake"
+    },
+    {
+      "id": "service-diagnostics",
+      "description": "Car electrical systems",
+      "imageUrl": "https://xn--ogbhrq.vip/wp-content/uploads/2026/02/electreic-chick.png",
+      "imageHint": "car electrics"
+    },
+    {
+      "id": "service-oil",
+      "description": "Pouring fresh oil into a car engine",
+      "imageUrl": "https://xn--ogbhrq.vip/wp-content/uploads/2026/02/alrashud-oil.png",
+      "imageHint": "oil change"
+    },
+    {
+      "id": "service-transmission",
+      "description": "Car transmission system",
+      "imageUrl": "https://images.unsplash.com/photo-1686082207936-21e1e120e895?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjYXIlMjB0cmFuc21pc3Npb258ZW58MHx8fHwxNzcxODAzNTk2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car transmission"
+    },
+    {
+      "id": "service-ac",
+      "description": "Car air conditioning system vents",
+      "imageUrl": "https://images.unsplash.com/photo-1759300098929-f46fa069271e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Y2FyJTIwYWN8ZW58MHx8fHwxNzcxODMzMzc0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car ac"
+    }
+  ]
+}
