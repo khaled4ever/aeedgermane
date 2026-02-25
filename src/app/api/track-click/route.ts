@@ -25,6 +25,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'IP address is required' }, { status: 400 });
     }
 
+    // Whitelist Google's known crawler IPs to prevent them from being banned.
+    // The most common range for Googlebot is 66.249.64.0 - 66.249.95.255
+    if (ip.startsWith('66.249.')) {
+        console.log(`[Ad-Tracker] Ignoring Googlebot IP: ${ip}`);
+        return NextResponse.json({ success: true, message: 'Googlebot ignored' });
+    }
+
     // Using 'ad_clicks' collection as seen in the user's screenshot
     const trackerRef = firestoreAdmin.collection('ad_clicks').doc(ip);
     const now = new Date();
