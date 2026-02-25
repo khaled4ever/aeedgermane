@@ -3,6 +3,8 @@ import type { NextRequest } from 'next/server';
 import { admin, firestoreAdmin } from '@/lib/firebase-admin';
 import type { Timestamp } from 'firebase-admin/firestore';
 
+export const runtime = 'nodejs';
+
 const AD_CLICK_LIMIT = 4; // 4 clicks
 const AD_CLICK_WINDOW_MINUTES = 10;
 const AD_CLICK_WINDOW_MS = AD_CLICK_WINDOW_MINUTES * 60 * 1000;
@@ -15,7 +17,6 @@ interface ClickTrackerDoc {
 export async function POST(request: NextRequest) {
   if (!firestoreAdmin) {
     // Fail silently if Firebase Admin is not configured.
-    // This prevents errors but tracking will not work.
     return NextResponse.json({ success: true, message: 'Tracking service not configured.' });
   }
 
@@ -27,13 +28,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Whitelist Google's known crawler IPs to prevent them from being flagged.
-    // The most common range for Googlebot is 66.249.64.0 - 66.249.95.255
     if (ip.startsWith('66.249.')) {
         console.log(`[Ad-Tracker] Ignoring Googlebot IP: ${ip}`);
-        // Return success to not indicate any issue to the client.
         return NextResponse.json({ success: true, message: 'Googlebot ignored' });
     }
 
+    // Use the IP directly as the document ID. Dots are valid characters in Firestore document IDs.
     const trackerRef = firestoreAdmin.collection('ad_clicks').doc(ip);
     const now = new Date();
     const windowStart = new Date(now.getTime() - AD_CLICK_WINDOW_MS);
@@ -74,7 +74,6 @@ export async function POST(request: NextRequest) {
       // Check if the click limit is reached
       if (recentTimestamps.length >= AD_CLICK_LIMIT) {
         // Flag the IP for banning via the backend Cloud Function.
-        // The website itself takes NO blocking action.
         transaction.update(trackerRef, {
           timestamps: recentClickFirestoreTimestamps,
           status: 'pending_ban',
@@ -84,13 +83,13 @@ export async function POST(request: NextRequest) {
         // Just update the timestamps and continue monitoring.
         transaction.update(trackerRef, {
           timestamps: recentClickFirestoreTimestamps,
+          status: 'monitoring', // Ensure status is set if it was missing
         });
         console.log(`[Ad-Tracker] Another click recorded for IP: ${ip}. Clicks in window: ${recentTimestamps.length}.`);
       }
     });
     
     // Always return a success response to the middleware.
-    // The user's request is never blocked or redirected.
     return NextResponse.json({ success: true });
 
   } catch (error) {
