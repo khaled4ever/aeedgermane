@@ -7,10 +7,10 @@ const AD_CLICK_LIMIT = 4; // 4 clicks
 const AD_CLICK_WINDOW_MINUTES = 10;
 const AD_CLICK_WINDOW_MS = AD_CLICK_WINDOW_MINUTES * 60 * 1000;
 
-// This interface now matches the user's expectation from the screenshot
 interface ClickTrackerDoc {
   timestamps: Timestamp[];
   banned: boolean;
+  status?: 'pending_ban' | 'banned_in_ads';
 }
 
 export async function POST(request: NextRequest) {
@@ -32,7 +32,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, message: 'Googlebot ignored' });
     }
 
-    // Using 'ad_clicks' collection as seen in the user's screenshot
     const trackerRef = firestoreAdmin.collection('ad_clicks').doc(ip);
     const now = new Date();
     const windowStart = new Date(now.getTime() - AD_CLICK_WINDOW_MS);
@@ -54,9 +53,9 @@ export async function POST(request: NextRequest) {
 
       const data = doc.data() as ClickTrackerDoc;
 
-      // If already banned, do nothing.
-      if (data.banned) {
-        console.log(`IP ${ip} is already banned. Ignoring click.`);
+      // If already banned or in process, do nothing.
+      if (data.banned || data.status === 'banned_in_ads') {
+        console.log(`IP ${ip} is already processed. Ignoring click.`);
         return;
       }
       
@@ -72,12 +71,13 @@ export async function POST(request: NextRequest) {
 
       // Check if the click limit is reached
       if (recentTimestamps.length >= AD_CLICK_LIMIT) {
-        // Ban the IP
+        // Ban the IP and set status for the cloud function to pick up
         transaction.update(trackerRef, {
           timestamps: recentClickFirestoreTimestamps,
           banned: true,
+          status: 'pending_ban',
         });
-        console.log(`IP ${ip} has been banned. Clicks: ${recentTimestamps.length}`);
+        console.log(`IP ${ip} has been banned. Status set to pending_ban. Clicks: ${recentTimestamps.length}`);
       } else {
         // Just update the timestamps
         transaction.update(trackerRef, {
