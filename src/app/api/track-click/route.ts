@@ -7,10 +7,10 @@ const AD_CLICK_LIMIT = 4; // 4 clicks
 const AD_CLICK_WINDOW_MINUTES = 10;
 const AD_CLICK_WINDOW_MS = AD_CLICK_WINDOW_MINUTES * 60 * 1000;
 
+// This interface now matches the user's expectation from the screenshot
 interface ClickTrackerDoc {
-  clicks: Timestamp[];
-  status: 'monitoring' | 'pending_ban' | 'banned_in_ads';
-  lastUpdated: Timestamp;
+  timestamps: Timestamp[];
+  banned: boolean;
 }
 
 export async function POST(request: NextRequest) {
@@ -25,7 +25,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'IP address is required' }, { status: 400 });
     }
 
-    const trackerRef = firestoreAdmin.collection('ad_clicks_tracker').doc(ip);
+    // Using 'ad_clicks' collection as seen in the user's screenshot
+    const trackerRef = firestoreAdmin.collection('ad_clicks').doc(ip);
     const now = new Date();
     const windowStart = new Date(now.getTime() - AD_CLICK_WINDOW_MS);
 
@@ -36,38 +37,46 @@ export async function POST(request: NextRequest) {
       if (!doc.exists) {
         // First click for this IP
         const newDoc: ClickTrackerDoc = {
-          clicks: [nowTimestamp],
-          status: 'monitoring',
-          lastUpdated: nowTimestamp,
+          timestamps: [nowTimestamp],
+          banned: false,
         };
         transaction.set(trackerRef, newDoc);
+        console.log(`First click recorded for IP: ${ip}`);
         return;
       }
 
       const data = doc.data() as ClickTrackerDoc;
 
-      if (data.status === 'pending_ban' || data.status === 'banned_in_ads') {
+      // If already banned, do nothing.
+      if (data.banned) {
+        console.log(`IP ${ip} is already banned. Ignoring click.`);
         return;
       }
-
-      const recentClicks = data.clicks
+      
+      // Filter timestamps to only include those within the time window
+      const recentTimestamps = (data.timestamps || [])
         .map((t) => t.toDate())
         .filter((clickTime) => clickTime > windowStart);
       
-      recentClicks.push(now);
-      const recentClickTimestamps = recentClicks.map(d => admin.firestore.Timestamp.fromDate(d));
+      // Add the current click timestamp
+      recentTimestamps.push(now);
+      
+      const recentClickFirestoreTimestamps = recentTimestamps.map(d => admin.firestore.Timestamp.fromDate(d));
 
-      if (recentClicks.length >= AD_CLICK_LIMIT) {
+      // Check if the click limit is reached
+      if (recentTimestamps.length >= AD_CLICK_LIMIT) {
+        // Ban the IP
         transaction.update(trackerRef, {
-          clicks: recentClickTimestamps,
-          status: 'pending_ban',
-          lastUpdated: nowTimestamp,
+          timestamps: recentClickFirestoreTimestamps,
+          banned: true,
         });
+        console.log(`IP ${ip} has been banned. Clicks: ${recentTimestamps.length}`);
       } else {
+        // Just update the timestamps
         transaction.update(trackerRef, {
-          clicks: recentClickTimestamps,
-          lastUpdated: nowTimestamp,
+          timestamps: recentClickFirestoreTimestamps,
         });
+        console.log(`Another click recorded for IP: ${ip}. Clicks in window: ${recentTimestamps.length}`);
       }
     });
     
