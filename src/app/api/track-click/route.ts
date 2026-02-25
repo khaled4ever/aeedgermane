@@ -9,13 +9,14 @@ const AD_CLICK_WINDOW_MS = AD_CLICK_WINDOW_MINUTES * 60 * 1000;
 
 interface ClickTrackerDoc {
   timestamps: Timestamp[];
-  banned: boolean;
-  status?: 'pending_ban' | 'banned_in_ads';
+  status: 'monitoring' | 'pending_ban' | 'banned_in_ads';
 }
 
 export async function POST(request: NextRequest) {
   if (!firestoreAdmin) {
-    return NextResponse.json({ success: false, message: 'Firebase not configured' }, { status: 500 });
+    // Fail silently if Firebase Admin is not configured.
+    // This prevents errors but tracking will not work.
+    return NextResponse.json({ success: true, message: 'Tracking service not configured.' });
   }
 
   try {
@@ -25,10 +26,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'IP address is required' }, { status: 400 });
     }
 
-    // Whitelist Google's known crawler IPs to prevent them from being banned.
+    // Whitelist Google's known crawler IPs to prevent them from being flagged.
     // The most common range for Googlebot is 66.249.64.0 - 66.249.95.255
     if (ip.startsWith('66.249.')) {
         console.log(`[Ad-Tracker] Ignoring Googlebot IP: ${ip}`);
+        // Return success to not indicate any issue to the client.
         return NextResponse.json({ success: true, message: 'Googlebot ignored' });
     }
 
@@ -41,25 +43,25 @@ export async function POST(request: NextRequest) {
       const nowTimestamp = admin.firestore.Timestamp.fromDate(now);
 
       if (!doc.exists) {
-        // First click for this IP
+        // First click for this IP, start monitoring.
         const newDoc: ClickTrackerDoc = {
           timestamps: [nowTimestamp],
-          banned: false,
+          status: 'monitoring',
         };
         transaction.set(trackerRef, newDoc);
-        console.log(`First click recorded for IP: ${ip}`);
+        console.log(`[Ad-Tracker] First click recorded for IP: ${ip}. Status: monitoring.`);
         return;
       }
 
       const data = doc.data() as ClickTrackerDoc;
 
-      // If already banned or in process, do nothing.
-      if (data.banned || data.status === 'banned_in_ads') {
-        console.log(`IP ${ip} is already processed. Ignoring click.`);
+      // If IP is already flagged or banned, do not record more clicks.
+      if (data.status === 'pending_ban' || data.status === 'banned_in_ads') {
+        console.log(`[Ad-Tracker] IP ${ip} is already processed (status: ${data.status}). Ignoring click.`);
         return;
       }
       
-      // Filter timestamps to only include those within the time window
+      // Filter timestamps to only include those within the current time window
       const recentTimestamps = (data.timestamps || [])
         .map((t) => t.toDate())
         .filter((clickTime) => clickTime > windowStart);
@@ -71,26 +73,29 @@ export async function POST(request: NextRequest) {
 
       // Check if the click limit is reached
       if (recentTimestamps.length >= AD_CLICK_LIMIT) {
-        // Ban the IP and set status for the cloud function to pick up
+        // Flag the IP for banning via the backend Cloud Function.
+        // The website itself takes NO blocking action.
         transaction.update(trackerRef, {
           timestamps: recentClickFirestoreTimestamps,
-          banned: true,
           status: 'pending_ban',
         });
-        console.log(`IP ${ip} has been banned. Status set to pending_ban. Clicks: ${recentTimestamps.length}`);
+        console.log(`[Ad-Tracker] IP ${ip} reached click limit. Flagged with status: pending_ban. Clicks: ${recentTimestamps.length}`);
       } else {
-        // Just update the timestamps
+        // Just update the timestamps and continue monitoring.
         transaction.update(trackerRef, {
           timestamps: recentClickFirestoreTimestamps,
         });
-        console.log(`Another click recorded for IP: ${ip}. Clicks in window: ${recentTimestamps.length}`);
+        console.log(`[Ad-Tracker] Another click recorded for IP: ${ip}. Clicks in window: ${recentTimestamps.length}.`);
       }
     });
     
+    // Always return a success response to the middleware.
+    // The user's request is never blocked or redirected.
     return NextResponse.json({ success: true });
 
   } catch (error) {
     console.error(`[Ad-Tracker-API] Error processing request:`, error);
+    // Even in case of an internal error, do not block the user.
     return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
   }
 }
