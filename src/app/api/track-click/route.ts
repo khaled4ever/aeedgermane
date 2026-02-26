@@ -120,7 +120,6 @@ export async function POST(request: NextRequest) {
 
     const trackerRef = firestoreAdmin.collection('ad_clicks').doc(ip);
     
-    // The transaction ensures that we don't have race conditions if two clicks arrive at the same time.
     await firestoreAdmin.runTransaction(async (transaction) => {
       const doc = await transaction.get(trackerRef);
       const now = new Date();
@@ -144,20 +143,24 @@ export async function POST(request: NextRequest) {
       const recentClickFirestoreTimestamps = recentTimestamps.map(d => admin.firestore.Timestamp.fromDate(d));
 
       if (recentTimestamps.length >= AD_CLICK_LIMIT) {
-        console.log(`[Ad-Tracker] IP ${ip} reached click limit (${recentTimestamps.length}). Attempting ban in all accounts...`);
-        
-        // Call the new multi-account ban function
-        const banSuccessful = await banIpInAllGoogleAdsAccounts(ip);
-        
-        if (banSuccessful) {
-          transaction.set(trackerRef, {
-            timestamps: recentClickFirestoreTimestamps,
-            status: 'banned_in_ads',
-          });
+        // If Google Ads credentials are provided, attempt to ban the IP.
+        if (process.env.GOOGLE_ADS_ACCOUNTS) {
+          console.log(`[Ad-Tracker] IP ${ip} reached click limit (${recentTimestamps.length}). Attempting ban in all accounts...`);
+          const banSuccessful = await banIpInAllGoogleAdsAccounts(ip);
+          
+          if (banSuccessful) {
+            transaction.set(trackerRef, {
+              timestamps: recentClickFirestoreTimestamps,
+              status: 'banned_in_ads',
+            });
+          } else {
+            transaction.set(trackerRef, { timestamps: recentClickFirestoreTimestamps, status: 'monitoring' });
+            console.log(`[Ad-Tracker] Google Ads ban failed for ${ip} in at least one account. Will retry on next click.`);
+          }
         } else {
-          // If ban fails in any account, just log the click and keep monitoring. It will retry on the next click.
+          // If no credentials, just log the event for manual review.
           transaction.set(trackerRef, { timestamps: recentClickFirestoreTimestamps, status: 'monitoring' });
-          console.log(`[Ad-Tracker] Google Ads ban failed for ${ip} in at least one account. Will retry on next click.`);
+          console.log(`[Ad-Tracker] IP ${ip} reached click limit (${recentTimestamps.length}). Monitoring only. Manual ban required.`);
         }
 
       } else {
