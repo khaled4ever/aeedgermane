@@ -17,52 +17,90 @@ interface ClickTrackerDoc {
   status: 'monitoring' | 'banned_in_ads';
 }
 
-// --- Google Ads API Helper ---
-async function banIpInGoogleAds(ipAddress: string): Promise<boolean> {
-    console.log(`[Ad-Tracker] Attempting to ban IP ${ipAddress} in Google Ads.`);
-
-    const requiredEnv = [
-        'GOOGLE_ADS_DEVELOPER_TOKEN', 'GOOGLE_ADS_CLIENT_ID', 'GOOGLE_ADS_CLIENT_SECRET',
-        'GOOGLE_ADS_REFRESH_TOKEN', 'GOOGLE_ADS_LOGIN_CUSTOMER_ID', 'GOOGLE_ADS_CUSTOMER_ID'
-    ];
-    
-    if (requiredEnv.some(envVar => !process.env[envVar])) {
-        console.error(`[Ad-Tracker] Google Ads API credentials missing in .env.local. Cannot ban IP.`);
-        return false;
-    }
-
-    try {
-        const client = new GoogleAdsApi({
-            client_id: process.env.GOOGLE_ADS_CLIENT_ID!,
-            client_secret: process.env.GOOGLE_ADS_CLIENT_SECRET!,
-            developer_token: process.env.GOOGLE_ADS_DEVELOPER_TOKEN!,
-        });
-
-        const customer = client.Customer({
-            customer_id: process.env.GOOGLE_ADS_CUSTOMER_ID!,
-            login_customer_id: process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID!,
-            refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN!,
-        });
-        
-        const campaignCriterion = {
-            campaign: `customers/${process.env.GOOGLE_ADS_CUSTOMER_ID!}/campaigns/-1`, // -1 targets all campaigns
-            ip_block: { ip_address: ipAddress },
-            negative: true,
-        };
-
-        await customer.campaignCriteria.create([campaignCriterion]);
-        console.log(`[Ad-Tracker] Successfully banned IP ${ipAddress} in Google Ads.`);
-        return true;
-
-    } catch (error: any) {
-        if (error.errors?.some((e: any) => e.error_code?.criterion_error === 'IP_ADDRESS_ALREADY_EXCLUDED')) {
-            console.log(`[Ad-Tracker] IP ${ipAddress} is already banned in Google Ads. Treating as success.`);
-            return true;
-        }
-        console.error(`[Ad-Tracker] Failed to ban IP ${ipAddress} in Google Ads.`, error);
-        return false;
-    }
+interface GoogleAdsCredentials {
+  developerToken: string;
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+  loginCustomerId: string;
+  customerId: string;
 }
+
+// --- Google Ads API Helper ---
+async function banIpInAllGoogleAdsAccounts(ipAddress: string): Promise<boolean> {
+    console.log(`[Ad-Tracker] Attempting to ban IP ${ipAddress} in ALL Google Ads accounts.`);
+
+    const credentialsJson = process.env.GOOGLE_ADS_ACCOUNTS;
+    if (!credentialsJson) {
+        console.error(`[Ad-Tracker] GOOGLE_ADS_ACCOUNTS environment variable is not set. Cannot ban IP.`);
+        return false;
+    }
+
+    let credentials: GoogleAdsCredentials[];
+    try {
+        credentials = JSON.parse(credentialsJson);
+        if (!Array.isArray(credentials) || credentials.length === 0) {
+            throw new Error("GOOGLE_ADS_ACCOUNTS is not a valid JSON array or is empty.");
+        }
+    } catch (e: any) {
+        console.error(`[Ad-Tracker] Failed to parse GOOGLE_ADS_ACCOUNTS from .env.local. Ensure it's a valid JSON array. Error:`, e.message);
+        return false;
+    }
+
+    let allBansSuccessful = true;
+
+    const results = await Promise.allSettled(credentials.map(async (cred, index) => {
+        const accountId = cred.customerId || `(Account ${index + 1})`;
+        console.log(`[Ad-Tracker] Processing ban for IP ${ipAddress} in account: ${accountId}`);
+
+        try {
+            const client = new GoogleAdsApi({
+                client_id: cred.clientId,
+                client_secret: cred.clientSecret,
+                developer_token: cred.developerToken,
+            });
+
+            const customer = client.Customer({
+                customer_id: cred.customerId,
+                login_customer_id: cred.loginCustomerId,
+                refresh_token: cred.refreshToken,
+            });
+            
+            const campaignCriterion = {
+                campaign: `customers/${cred.customerId}/campaigns/-1`, // -1 targets all campaigns
+                ip_block: { ip_address: ipAddress },
+                negative: true,
+            };
+
+            await customer.campaignCriteria.create([campaignCriterion]);
+            console.log(`[Ad-Tracker] SUCCESS: Banned IP ${ipAddress} in account ${accountId}.`);
+            return { status: 'fulfilled', accountId };
+
+        } catch (error: any) {
+            if (error.errors?.some((e: any) => e.error_code?.criterion_error === 'IP_ADDRESS_ALREADY_EXCLUDED')) {
+                console.log(`[Ad-Tracker] INFO: IP ${ipAddress} is already banned in account ${accountId}. Treating as success.`);
+                return { status: 'fulfilled', accountId };
+            }
+            console.error(`[Ad-Tracker] FAILED to ban IP ${ipAddress} in account ${accountId}.`, error);
+            throw new Error(`Failed for account ${accountId}`);
+        }
+    }));
+    
+    results.forEach(result => {
+        if (result.status === 'rejected') {
+            allBansSuccessful = false;
+        }
+    });
+
+    if (allBansSuccessful) {
+        console.log(`[Ad-Tracker] IP ${ipAddress} was successfully processed for all accounts.`);
+    } else {
+        console.warn(`[Ad-Tracker] IP ${ipAddress} failed to be banned in one or more accounts. Check logs for details.`);
+    }
+
+    return allBansSuccessful;
+}
+
 
 // --- API Route Handler ---
 export async function POST(request: NextRequest) {
@@ -106,12 +144,10 @@ export async function POST(request: NextRequest) {
       const recentClickFirestoreTimestamps = recentTimestamps.map(d => admin.firestore.Timestamp.fromDate(d));
 
       if (recentTimestamps.length >= AD_CLICK_LIMIT) {
-        console.log(`[Ad-Tracker] IP ${ip} reached click limit (${recentTimestamps.length}). Attempting ban...`);
+        console.log(`[Ad-Tracker] IP ${ip} reached click limit (${recentTimestamps.length}). Attempting ban in all accounts...`);
         
-        // IMPORTANT: Calling an external API within a transaction is generally discouraged.
-        // However, for this use case, it's the simplest way to ensure atomicity.
-        // If timeouts occur, a more complex queue-based system would be needed.
-        const banSuccessful = await banIpInGoogleAds(ip);
+        // Call the new multi-account ban function
+        const banSuccessful = await banIpInAllGoogleAdsAccounts(ip);
         
         if (banSuccessful) {
           transaction.set(trackerRef, {
@@ -119,9 +155,9 @@ export async function POST(request: NextRequest) {
             status: 'banned_in_ads',
           });
         } else {
-          // If ban fails, just log the click and keep monitoring. It will retry on the next click.
+          // If ban fails in any account, just log the click and keep monitoring. It will retry on the next click.
           transaction.set(trackerRef, { timestamps: recentClickFirestoreTimestamps, status: 'monitoring' });
-          console.log(`[Ad-Tracker] Google Ads ban failed for ${ip}. Will retry on next click.`);
+          console.log(`[Ad-Tracker] Google Ads ban failed for ${ip} in at least one account. Will retry on next click.`);
         }
 
       } else {
