@@ -21,16 +21,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SITE_CONFIG } from "@/app/config";
 import { Logo } from "@/components/icons";
 import { cn } from "@/lib/utils";
-
-const reportConversion = () => {
-    const gtag = (window as any).gtag;
-    if (typeof gtag === 'function') {
-        gtag('event', 'conversion', {
-            'send_to': 'AW-17974591338/kIrgCKDatP4bEOr--fpC',
-            'transaction_id': ''
-        });
-    }
-};
+import { reportGtagConversion } from "@/lib/google-ads";
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -40,7 +31,7 @@ export function Header() {
   const whatsappLink = `https://wa.me/966${SITE_CONFIG.site.whatsapp.substring(1)}?text=${encodeURIComponent(prefilledMessage)}`;
   
   const handleMobileBookingClick = () => {
-    reportConversion();
+    reportGtagConversion();
     setIsMobileMenuOpen(false);
   };
 
@@ -89,7 +80,7 @@ export function Header() {
         </nav>
 
         <div className="flex flex-1 items-center justify-end gap-2 md:ml-auto">
-          <Button asChild className="hidden md:flex" onClick={reportConversion}>
+          <Button asChild className="hidden md:flex" onClick={reportGtagConversion}>
             <Link href={whatsappLink} target="_blank" rel="noopener noreferrer">احجز موعد</Link>
           </Button>
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>

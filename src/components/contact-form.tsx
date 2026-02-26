@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { reportGtagConversion } from "@/lib/google-ads";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "الاسم مطلوب." }),
@@ -46,14 +47,7 @@ export function ContactForm() {
     await new Promise(resolve => setTimeout(resolve, 1500));
     console.log(values);
 
-    // Fire conversion event
-    const gtag = (window as any).gtag;
-    if (typeof gtag === 'function') {
-        gtag('event', 'conversion', {
-            'send_to': 'AW-17974591338/kIrgCKDatP4bEOr--fpC',
-            'transaction_id': ''
-        });
-    }
+    reportGtagConversion();
     
     setIsSubmitting(false);
     setIsSubmitted(true);

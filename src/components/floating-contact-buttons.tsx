@@ -3,16 +3,7 @@
 import { Phone } from 'lucide-react';
 import Link from 'next/link';
 import { SITE_CONFIG } from '@/app/config';
-
-const reportConversion = () => {
-    const gtag = (window as any).gtag;
-    if (typeof gtag === 'function') {
-      gtag('event', 'conversion', {
-          'send_to': 'AW-17974591338/kIrgCKDatP4bEOr--fpC',
-          'transaction_id': ''
-      });
-    }
-};
+import { reportGtagConversion } from '@/lib/google-ads';
 
 const WhatsAppIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -35,7 +26,7 @@ export function FloatingContactButtons() {
                     rel="noopener noreferrer"
                     className="flex flex-1 items-center justify-center gap-2 bg-green-500 text-white transition-colors hover:bg-green-600"
                     aria-label="تواصل معنا عبر الواتساب"
-                    onClick={reportConversion}
+                    onClick={reportGtagConversion}
                 >
                     <WhatsAppIcon />
                     <span className="font-semibold">واتساب</span>
@@ -45,7 +36,7 @@ export function FloatingContactButtons() {
                     href={`tel:${fullPhoneNumber}`}
                     className="flex flex-1 items-center justify-center gap-2 bg-blue-500 text-white transition-colors hover:bg-blue-600"
                     aria-label="اتصل بنا"
-                    onClick={reportConversion}
+                    onClick={reportGtagConversion}
                 >
                     <Phone className="h-6 w-6" />
                     <span className="font-semibold">اتصال</span>
@@ -60,7 +51,7 @@ export function FloatingContactButtons() {
                     rel="noopener noreferrer"
                     className="flex h-14 w-14 items-center justify-center rounded-full bg-green-500 text-white shadow-lg transition-transform hover:scale-110 hover:bg-green-600"
                     aria-label="تواصل معنا عبر الواتساب"
-                    onClick={reportConversion}
+                    onClick={reportGtagConversion}
                 >
                     <WhatsAppIcon />
                 </Link>
@@ -68,7 +59,7 @@ export function FloatingContactButtons() {
                     href={`tel:${fullPhoneNumber}`}
                     className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 text-white shadow-lg transition-transform hover:scale-110 hover:bg-blue-600"
                     aria-label="اتصل بنا"
-                    onClick={reportConversion}
+                    onClick={reportGtagConversion}
                 >
                     <Phone className="h-7 w-7" />
                 </Link>

@@ -27,6 +27,7 @@ import { SITE_CONFIG } from '@/app/config';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import React from 'react';
 import Autoplay from 'embla-carousel-autoplay';
+import { reportGtagConversion } from '@/lib/google-ads';
 
 const services = [
   {
@@ -103,15 +104,6 @@ export default function Home() {
   const prefilledMessage = "أهلاً مركز الرشود، أرغب في حجز موعد صيانة لسيارتي.";
   const whatsappLink = `https://wa.me/966${SITE_CONFIG.site.whatsapp.substring(1)}?text=${encodeURIComponent(prefilledMessage)}`;
   
-  const reportConversion = () => {
-    const gtag = (window as any).gtag;
-    if (typeof gtag === 'function') {
-      gtag('event', 'conversion', {
-          'send_to': 'AW-17974591338/kIrgCKDatP4bEOr--fpC',
-          'transaction_id': ''
-      });
-    }
-  };
 
   return (
     <div className="flex flex-col">
@@ -131,7 +123,7 @@ export default function Home() {
             <p className="mt-4 max-w-3xl text-lg md:text-xl text-primary-foreground/90 drop-shadow-md">
               خبرة تفوق التوقعات، وجودة تضمن راحة بالك.
             </p>
-            <Button asChild size="lg" variant="secondary" className="mt-8 font-bold" onClick={reportConversion}>
+            <Button asChild size="lg" variant="secondary" className="mt-8 font-bold" onClick={reportGtagConversion}>
               <Link href={whatsappLink} target="_blank" rel="noopener noreferrer">
                 احجز موعدك الآن
                 <ChevronLeft className="mr-2 h-5 w-5" />
@@ -286,7 +278,7 @@ export default function Home() {
             size="lg"
             variant="secondary"
             className="mt-8 font-bold"
-            onClick={reportConversion}
+            onClick={reportGtagConversion}
           >
             <Link href={whatsappLink} target="_blank" rel="noopener noreferrer">
               تواصل معنا
