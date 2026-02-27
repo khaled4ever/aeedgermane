@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 // --- Configuration ---
 const AD_CLICK_LIMIT = 4;
-const AD_CLICK_WINDOW_MINUTES = 5;
+const AD_CLICK_WINDOW_MINUTES = 5; // Check for clicks within a 5-minute window
 const AD_CLICK_WINDOW_MS = AD_CLICK_WINDOW_MINUTES * 60 * 1000;
 
 // --- Interfaces ---
@@ -47,26 +47,35 @@ export async function POST(request: NextRequest) {
         data = doc.data() as ClickTrackerDoc;
       }
       
-      if (data.status === 'banned') {
-        console.log(`[Ad-Tracker] IP ${ip} is already flagged as banned. Ignoring new click.`);
-        return; // Stop processing
-      }
+      // If status is 'banned', we just record the click without changing status.
+      // This allows us to see continued attempts from a banned IP.
       
-      const recentTimestamps = (data.timestamps || []).map(t => t.toDate()).filter(clickTime => clickTime > windowStart);
-      recentTimestamps.push(now);
-      const recentClickFirestoreTimestamps = recentTimestamps.map(d => admin.firestore.Timestamp.fromDate(d));
+      const allTimestamps = (data.timestamps || []).map(t => t.toDate());
+      allTimestamps.push(now);
+      const allFirestoreTimestamps = allTimestamps.map(d => admin.firestore.Timestamp.fromDate(d));
+      
+      const recentTimestamps = allTimestamps.filter(clickTime => clickTime > windowStart);
+
+      if (data.status === 'banned') {
+          console.log(`[Ad-Tracker] Recording another click from already banned IP ${ip}. Total clicks: ${allTimestamps.length}.`);
+          transaction.set(trackerRef, {
+              timestamps: allFirestoreTimestamps,
+              status: 'banned',
+          });
+          return;
+      }
 
       if (recentTimestamps.length >= AD_CLICK_LIMIT) {
         // Limit reached. Flag the IP in Firestore for the Google Ads Script to handle.
-        console.log(`[Ad-Tracker] IP ${ip} reached click limit (${recentTimestamps.length}). Flagging for script-based ban.`);
+        console.log(`[Ad-Tracker] IP ${ip} reached click limit (${recentTimestamps.length}). Flagging as banned.`);
         transaction.set(trackerRef, {
-          timestamps: recentClickFirestoreTimestamps,
+          timestamps: allFirestoreTimestamps,
           status: 'banned',
         });
 
       } else {
         // Limit not reached, just update timestamps and keep monitoring.
-        transaction.set(trackerRef, { timestamps: recentClickFirestoreTimestamps, status: 'monitoring' });
+        transaction.set(trackerRef, { timestamps: allFirestoreTimestamps, status: 'monitoring' });
         console.log(`[Ad-Tracker] Another click recorded for ${ip}. Clicks in window: ${recentTimestamps.length}.`);
       }
     });
