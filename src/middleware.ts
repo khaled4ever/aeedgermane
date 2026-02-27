@@ -17,9 +17,14 @@ export function middleware(request: NextRequest) {
   // 2. Get IP address
   const ip = request.ip ?? request.headers.get('x-forwarded-for');
   if (!ip) {
-    // If we can't get an IP, there's nothing to track.
+    console.log("[Ad-Tracker-Middleware] Could not determine IP address. Aborting tracking for this request.");
     return NextResponse.next();
   }
+
+  // --- NEW DIAGNOSTIC LOGS ---
+  console.log(`[Ad-Tracker-Middleware] Ad click detected! IP: ${ip}. URL: ${request.nextUrl.href}`);
+  console.log("[Ad-Tracker-Middleware] Firing tracking request to /api/track-click...");
+  // --- END DIAGNOSTIC LOGS ---
 
   // 3. Fire-and-forget the tracking request to our own API route.
   // This avoids delaying the user's navigation.
@@ -30,7 +35,9 @@ export function middleware(request: NextRequest) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ ip }),
-  }).catch(console.error); // Log errors but don't block
+  }).catch(err => {
+      console.error("[Ad-Tracker-Middleware] Error firing tracking request:", err);
+  });
 
   // 4. IMPORTANT: Always allow the request to proceed immediately.
   return NextResponse.next();
