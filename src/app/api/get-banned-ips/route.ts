@@ -33,6 +33,8 @@ export async function GET(request: NextRequest) {
       .where('status', '==', 'banned')
       .get();
 
+    console.log(`[Get-Banned-IPs] Firestore query executed. Found ${bannedIpsSnapshot.size} documents with status 'banned'.`);
+
     if (bannedIpsSnapshot.empty) {
       return new NextResponse('', {
         status: 200,
