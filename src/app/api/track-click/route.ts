@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 // --- Configuration ---
 const AD_CLICK_LIMIT = 4;
-const AD_CLICK_WINDOW_MINUTES = 10;
+const AD_CLICK_WINDOW_MINUTES = 5;
 const AD_CLICK_WINDOW_MS = AD_CLICK_WINDOW_MINUTES * 60 * 1000;
 
 // --- Interfaces ---
