@@ -2,23 +2,26 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // 1. Check for the Google Click ID (gclid) or a special test parameter
-  const isAdClick = request.nextUrl.searchParams.has('gclid');
+  // A test parameter to allow developers to simulate an ad click
   const isTestClick = request.nextUrl.searchParams.has('test_ad_click');
+  // A real ad click will have a gclid
+  const isAdClick = request.nextUrl.searchParams.has('gclid');
+  // Vercel and Next.js prefetch pages, which we want to ignore
+  const isPrefetch = request.headers.get('x-purpose') === 'prefetch';
 
-  // 2. Bypass if it's not an ad click, not a test click, or if it's a prefetch request
-  if ((!isAdClick && !isTestClick) || request.headers.get('x-purpose') === 'prefetch') {
+  // 1. If it's not a real ad click, not a test click, or if it's a prefetch, do nothing.
+  if ((!isAdClick && !isTestClick) || isPrefetch) {
     return NextResponse.next();
   }
 
-  // 3. Get IP address
+  // 2. Get IP address
   const ip = request.ip ?? request.headers.get('x-forwarded-for');
   if (!ip) {
     // If we can't get an IP, there's nothing to track.
     return NextResponse.next();
   }
 
-  // 4. Fire-and-forget the tracking request to our own API route
+  // 3. Fire-and-forget the tracking request to our own API route.
   // This avoids delaying the user's navigation.
   const trackUrl = new URL('/api/track-click', request.url);
   fetch(trackUrl, {
@@ -29,7 +32,7 @@ export function middleware(request: NextRequest) {
     body: JSON.stringify({ ip }),
   }).catch(console.error); // Log errors but don't block
 
-  // 5. IMPORTANT: Always allow the request to proceed immediately.
+  // 4. IMPORTANT: Always allow the request to proceed immediately.
   return NextResponse.next();
 }
 
