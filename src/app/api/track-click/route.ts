@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { admin, firestoreAdmin } from '@/lib/firebase-admin';
 import type { Timestamp } from 'firebase-admin/firestore';
-import { GoogleAdsApi } from 'google-ads-api';
 
 export const runtime = 'nodejs';
 
@@ -14,93 +13,8 @@ const AD_CLICK_WINDOW_MS = AD_CLICK_WINDOW_MINUTES * 60 * 1000;
 // --- Interfaces ---
 interface ClickTrackerDoc {
   timestamps: Timestamp[];
-  status: 'monitoring' | 'banned_in_ads';
+  status: 'monitoring' | 'banned';
 }
-
-interface GoogleAdsCredentials {
-  developerToken: string;
-  clientId: string;
-  clientSecret: string;
-  refreshToken: string;
-  loginCustomerId: string;
-  customerId: string;
-}
-
-// --- Google Ads API Helper ---
-async function banIpInAllGoogleAdsAccounts(ipAddress: string): Promise<boolean> {
-    console.log(`[Ad-Tracker] Attempting to ban IP ${ipAddress} in ALL Google Ads accounts.`);
-
-    const credentialsJson = process.env.GOOGLE_ADS_ACCOUNTS;
-    if (!credentialsJson) {
-        console.error(`[Ad-Tracker] GOOGLE_ADS_ACCOUNTS environment variable is not set. Cannot ban IP.`);
-        return false;
-    }
-
-    let credentials: GoogleAdsCredentials[];
-    try {
-        credentials = JSON.parse(credentialsJson);
-        if (!Array.isArray(credentials) || credentials.length === 0) {
-            throw new Error("GOOGLE_ADS_ACCOUNTS is not a valid JSON array or is empty.");
-        }
-    } catch (e: any) {
-        console.error(`[Ad-Tracker] Failed to parse GOOGLE_ADS_ACCOUNTS from .env.local. Ensure it's a valid JSON array. Error:`, e.message);
-        return false;
-    }
-
-    let allBansSuccessful = true;
-
-    const results = await Promise.allSettled(credentials.map(async (cred, index) => {
-        const accountId = cred.customerId || `(Account ${index + 1})`;
-        console.log(`[Ad-Tracker] Processing ban for IP ${ipAddress} in account: ${accountId}`);
-
-        try {
-            const client = new GoogleAdsApi({
-                client_id: cred.clientId,
-                client_secret: cred.clientSecret,
-                developer_token: cred.developerToken,
-            });
-
-            const customer = client.Customer({
-                customer_id: cred.customerId,
-                login_customer_id: cred.loginCustomerId,
-                refresh_token: cred.refreshToken,
-            });
-            
-            const campaignCriterion = {
-                campaign: `customers/${cred.customerId}/campaigns/-1`, // -1 targets all campaigns
-                ip_block: { ip_address: ipAddress },
-                negative: true,
-            };
-
-            await customer.campaignCriteria.create([campaignCriterion]);
-            console.log(`[Ad-Tracker] SUCCESS: Banned IP ${ipAddress} in account ${accountId}.`);
-            return { status: 'fulfilled', accountId };
-
-        } catch (error: any) {
-            if (error.errors?.some((e: any) => e.error_code?.criterion_error === 'IP_ADDRESS_ALREADY_EXCLUDED')) {
-                console.log(`[Ad-Tracker] INFO: IP ${ipAddress} is already banned in account ${accountId}. Treating as success.`);
-                return { status: 'fulfilled', accountId };
-            }
-            console.error(`[Ad-Tracker] FAILED to ban IP ${ipAddress} in account ${accountId}.`, error);
-            throw new Error(`Failed for account ${accountId}`);
-        }
-    }));
-    
-    results.forEach(result => {
-        if (result.status === 'rejected') {
-            allBansSuccessful = false;
-        }
-    });
-
-    if (allBansSuccessful) {
-        console.log(`[Ad-Tracker] IP ${ipAddress} was successfully processed for all accounts.`);
-    } else {
-        console.warn(`[Ad-Tracker] IP ${ipAddress} failed to be banned in one or more accounts. Check logs for details.`);
-    }
-
-    return allBansSuccessful;
-}
-
 
 // --- API Route Handler ---
 export async function POST(request: NextRequest) {
@@ -133,8 +47,8 @@ export async function POST(request: NextRequest) {
         data = doc.data() as ClickTrackerDoc;
       }
       
-      if (data.status === 'banned_in_ads') {
-        console.log(`[Ad-Tracker] IP ${ip} is already banned. Ignoring new click.`);
+      if (data.status === 'banned') {
+        console.log(`[Ad-Tracker] IP ${ip} is already flagged as banned. Ignoring new click.`);
         return; // Stop processing
       }
       
@@ -143,25 +57,12 @@ export async function POST(request: NextRequest) {
       const recentClickFirestoreTimestamps = recentTimestamps.map(d => admin.firestore.Timestamp.fromDate(d));
 
       if (recentTimestamps.length >= AD_CLICK_LIMIT) {
-        // If Google Ads credentials are provided, attempt to ban the IP.
-        if (process.env.GOOGLE_ADS_ACCOUNTS) {
-          console.log(`[Ad-Tracker] IP ${ip} reached click limit (${recentTimestamps.length}). Attempting ban in all accounts...`);
-          const banSuccessful = await banIpInAllGoogleAdsAccounts(ip);
-          
-          if (banSuccessful) {
-            transaction.set(trackerRef, {
-              timestamps: recentClickFirestoreTimestamps,
-              status: 'banned_in_ads',
-            });
-          } else {
-            transaction.set(trackerRef, { timestamps: recentClickFirestoreTimestamps, status: 'monitoring' });
-            console.log(`[Ad-Tracker] Google Ads ban failed for ${ip} in at least one account. Will retry on next click.`);
-          }
-        } else {
-          // If no credentials, just log the event for manual review.
-          transaction.set(trackerRef, { timestamps: recentClickFirestoreTimestamps, status: 'monitoring' });
-          console.log(`[Ad-Tracker] IP ${ip} reached click limit (${recentTimestamps.length}). Monitoring only. Manual ban required.`);
-        }
+        // Limit reached. Flag the IP in Firestore for the Google Ads Script to handle.
+        console.log(`[Ad-Tracker] IP ${ip} reached click limit (${recentTimestamps.length}). Flagging for script-based ban.`);
+        transaction.set(trackerRef, {
+          timestamps: recentClickFirestoreTimestamps,
+          status: 'banned',
+        });
 
       } else {
         // Limit not reached, just update timestamps and keep monitoring.
