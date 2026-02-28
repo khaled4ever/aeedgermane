@@ -24,7 +24,12 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
 
   useEffect(() => {
     // This effect runs only on the client, after the initial render.
-    const configIsValid = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
+    // We now check for authDomain as well, as it's critical for Firebase Auth.
+    const configIsValid = !!(
+      firebaseConfig.apiKey && 
+      firebaseConfig.projectId && 
+      firebaseConfig.authDomain
+    );
     
     if (configIsValid) {
       const instances = initializeFirebase();
