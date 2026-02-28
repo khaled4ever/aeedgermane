@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser } from '@/firebase';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,12 +11,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useUser();
   const auth = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !user) {
+    // If not loading, no user, and NOT on the login page, redirect to login.
+    if (!loading && !user && pathname !== '/dashboard/login') {
       router.replace('/dashboard/login');
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, pathname]);
+
+  // If we're on the login page, just render its content without the dashboard shell.
+  if (pathname === '/dashboard/login') {
+    return <>{children}</>;
+  }
+
+  // The rest of this component is the shell for authenticated dashboard pages.
 
   if (loading) {
     return (
@@ -27,7 +36,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }
 
   if (!user) {
-    // This is a fallback, useEffect should handle the redirect.
+    // This is a fallback state while the redirect is in flight.
+    // It prevents a flash of the empty dashboard.
     return null;
   }
 
