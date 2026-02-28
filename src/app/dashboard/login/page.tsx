@@ -1,6 +1,4 @@
 'use client';
-import { useUser } from '@/firebase';
-import { signInAnonymously, getAuth } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
@@ -8,58 +6,49 @@ import { Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { getApps, initializeApp } from 'firebase/app';
-import { firebaseConfig } from '@/firebase/config';
-
 
 const USERNAME = 'khaled4ever';
 const PASSWORD = 'Kh738211';
 
 export default function LoginPage() {
-  const { user, loading } = useUser();
   const router = useRouter();
 
   const [username, setUsernameState] = useState('');
   const [password, setPasswordState] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // To check auth status initially
 
   useEffect(() => {
-    if (!loading && user) {
+    // On component mount, check if user is already authenticated
+    if (localStorage.getItem('dashboard_auth') === 'true') {
       router.replace('/dashboard');
+    } else {
+      setIsLoading(false); // If not auth'd, stop loading and show form.
     }
-  }, [user, loading, router]);
+  }, [router]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username !== USERNAME || password !== PASSWORD) {
-        setError('اسم المستخدم أو كلمة المرور غير صحيحة.');
-        return;
-    }
-    
     setIsSubmitting(true);
     setError('');
 
-    try {
-      // Workaround: Initialize a fresh auth instance here to bypass potential context issues.
-      let app;
-      if (getApps().length === 0) {
-        app = initializeApp(firebaseConfig);
-      } else {
-        app = getApps()[0];
-      }
-      const auth = getAuth(app);
+    // Simulate a brief delay for UX
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-      await signInAnonymously(auth);
-      // The useUser hook will now redirect to /dashboard once its onAuthStateChanged listener fires.
-    } catch (error) {
-      console.error('Error signing in anonymously', error);
-      setError('حدث خطأ أثناء تسجيل الدخول.');
-      setIsSubmitting(false);
+    if (username !== USERNAME || password !== PASSWORD) {
+        setError('اسم المستخدم أو كلمة المرور غير صحيحة.');
+        setIsSubmitting(false);
+        return;
     }
+    
+    localStorage.setItem('dashboard_auth', 'true');
+    router.replace('/dashboard');
   };
-
-  if (loading || user) {
+  
+  if (isLoading) {
+    // Show a loader while we check the initial auth state.
+    // This prevents the login form from flashing if the user is already logged in.
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-16 w-16 animate-spin" />

@@ -1,33 +1,48 @@
 'use client';
 
-import { useUser } from '@/firebase';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/firebase';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { user, loading } = useUser();
-  const auth = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  // Using null as initial state to mean "loading" or "undetermined"
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // If not loading, no user, and NOT on the login page, redirect to login.
-    if (!loading && !user && pathname !== '/dashboard/login') {
-      router.replace('/dashboard/login');
-    }
-  }, [user, loading, router, pathname]);
+    // This effect runs only on the client-side.
+    try {
+      const authStatus = localStorage.getItem('dashboard_auth') === 'true';
+      setIsAuthenticated(authStatus);
 
-  // If we're on the login page, just render its content without the dashboard shell.
+      if (!authStatus && pathname !== '/dashboard/login') {
+        router.replace('/dashboard/login');
+      }
+    } catch (e) {
+      // If localStorage is not available for some reason
+      setIsAuthenticated(false);
+      if (pathname !== '/dashboard/login') {
+        router.replace('/dashboard/login');
+      }
+    }
+  }, [pathname, router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('dashboard_auth');
+    router.replace('/dashboard/login');
+  };
+
+  // If on the login page, just render it. The login page itself can handle
+  // redirecting already-logged-in users.
   if (pathname === '/dashboard/login') {
     return <>{children}</>;
   }
 
-  // The rest of this component is the shell for authenticated dashboard pages.
-
-  if (loading) {
+  // For all other /dashboard/* routes, we need to check auth.
+  if (isAuthenticated === null) {
+    // We're still checking auth on the client. Show a loader.
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin" />
@@ -35,17 +50,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user) {
-    // This is a fallback state while the redirect is in flight.
-    // It prevents a flash of the empty dashboard.
+  if (!isAuthenticated) {
+    // The redirect in useEffect has been triggered. Return null to prevent
+    // flashing the protected content.
     return null;
   }
 
+  // If authenticated, render the dashboard shell.
   return (
     <div>
       <header className="flex items-center justify-between p-4 border-b bg-background">
           <h1 className="text-xl font-bold">لوحة التحكم</h1>
-          { auth && <Button variant="ghost" onClick={() => auth.signOut()}>تسجيل الخروج</Button> }
+          <Button variant="ghost" onClick={handleLogout}>تسجيل الخروج</Button>
       </header>
       <main>{children}</main>
     </div>
