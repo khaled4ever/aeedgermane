@@ -1,9 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow authenticated users to read and write to the ad_clicks collection
+    // WARNING: This rule is insecure and allows anyone to read/write ad_clicks data.
+    // This is a temporary fix because Firebase Authentication is not being used for the dashboard.
+    // For a production app, you should protect this data with Firebase Auth.
     match /ad_clicks/{ip} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
     
     // Deny all other access to other collections
