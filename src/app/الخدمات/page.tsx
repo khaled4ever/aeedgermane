@@ -15,36 +15,42 @@ export const metadata: Metadata = {
 
 const services = [
   {
+    id: 'engine-gearbox',
     title: 'صيانة المحركات والجيربوكس',
     description: 'إصلاح وتوضيب جميع أنواع المحركات وناقلات الحركة الأوتوماتيكية بأيدي مهندسين متخصصين.',
     image: PlaceHolderImages.find(i => i.id === 'service-engine'),
     points: ['توضيب كامل للمحرك', 'إصلاح تسريبات الزيت', 'برمجة وصيانة الجيربوكس']
   },
   {
+    id: 'diagnostics',
     title: 'فحص وتشخيص الأعطال',
     description: 'نستخدم أحدث أجهزة الفحص والبرمجة لتحديد جميع الأعطال الميكانيكية والكهربائية بدقة عالية.',
     image: PlaceHolderImages.find(i => i.id === 'service-diagnostics'),
     points: ['فحص كمبيوتر شامل', 'تحديد أعطال الأنظمة الإلكترونية', 'تقارير فحص مفصلة']
   },
   {
+    id: 'periodic-maintenance',
     title: 'خدمات الصيانة الدورية',
     description: 'نقدم جميع خدمات الصيانة الدورية حسب توصيات المصنع للحفاظ على أداء وعمر سيارتك.',
     image: PlaceHolderImages.find(i => i.id === 'service-oil'),
     points: ['تغيير زيت المحرك والفلاتر', 'فحص وتغيير ماء الرديتر', 'فحص نظام التعليق']
   },
   {
+    id: 'brakes-suspension',
     title: 'نظام الفرامل والتعليق',
     description: 'صيانة وإصلاح أنظمة الفرامل والتعليق لضمان قيادة آمنة ومريحة.',
     image: PlaceHolderImages.find(i => i.id === 'service-brakes'),
     points: ['تغيير الفحمات والهوبات', 'إصلاح أنظمة ABS/ESP', 'وزن أذرعة ومقصات']
   },
   {
+    id: 'ac-repair',
     title: 'إصلاح نظام التكييف',
     description: 'فحص وإصلاح جميع مشاكل نظام التكييف، من ضعف التبريد إلى تسريبات الفريون.',
     image: PlaceHolderImages.find(i => i.id === 'service-ac'),
     points: ['تعبئة فريون أصلي', 'تنظيف دورة التكييف', 'إصلاح وتبديل الكمبروسر']
   },
   {
+    id: 'electrics-programming',
     title: 'كهرباء وبرمجة السيارات',
     description: 'حل جميع المشاكل الكهربائية المعقدة وبرمجة الوحدات الإلكترونية للسيارات الحديثة.',
     image: PlaceHolderImages.find(i => i.id === 'service-transmission'),
@@ -68,7 +74,7 @@ export default function ServicesPage() {
         <div className="container mx-auto px-4 py-16">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service, index) => (
-              <Card key={index} className="flex flex-col overflow-hidden transition-shadow hover:shadow-xl">
+              <Card key={index} id={service.id} className="flex flex-col overflow-hidden transition-shadow hover:shadow-xl scroll-mt-24">
                 {service.image && (
                   <div className="relative h-48 w-full">
                     <Image
