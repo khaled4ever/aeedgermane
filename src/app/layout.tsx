@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { FloatingContactButtons } from '@/components/floating-contact-buttons';
+import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://alrashud.com'),
@@ -35,13 +36,15 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <div className="relative flex min-h-screen flex-col">
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </div>
-        <Toaster />
-        <FloatingContactButtons />
+        <FirebaseClientProvider>
+          <div className="relative flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
+          <Toaster />
+          <FloatingContactButtons />
+        </FirebaseClientProvider>
 
         {GOOGLE_ADS_ID && (
           <>

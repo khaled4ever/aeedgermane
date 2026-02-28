@@ -1,0 +1,33 @@
+{
+  "entities": {
+    "adClick": {
+      "title": "Ad Click",
+      "description": "Represents a record of a click from a Google Ad.",
+      "type": "object",
+      "properties": {
+        "timestamps": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": ["monitoring", "banned"]
+        }
+      }
+    }
+  },
+  "auth": {
+    "providers": ["google.com"]
+  },
+  "firestore": {
+    "/ad_clicks/{ip}": {
+      "schema": {
+        "$ref": "#/entities/adClick"
+      },
+      "description": "Stores ad click data for each IP address."
+    }
+  }
+}

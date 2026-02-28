@@ -61,7 +61,8 @@ export const SITE_CONFIG = {
     },
     { "label": "احجز موعد", "path": "/احجز-موعد" },
     { "label": "الأسئلة الشائعة", "path": "/الأسئلة-الشائعة" },
-    { "label": "تواصل معنا", "path": "/تواصل-معنا" }
+    { "label": "تواصل معنا", "path": "/تواصل-معنا" },
+    { "label": "لوحة التحكم", "path": "/dashboard" }
   ],
   routes: {
     core_pages: [

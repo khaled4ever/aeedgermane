@@ -1,14 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // This rule denies all reads and writes to your database by default.
-    // It's a secure starting point. To allow access, you must add
-    // specific rules for your collections. For example, to allow
-    // authenticated users to read and write their own data:
-    //
-    // match /users/{userId}/{documents=**} {
-    //   allow read, write: if request.auth != null && request.auth.uid == userId;
-    // }
+    // Allow authenticated users to read and write to the ad_clicks collection
+    match /ad_clicks/{ip} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Deny all other access to other collections
     match /{document=**} {
       allow read, write: if false;
     }
