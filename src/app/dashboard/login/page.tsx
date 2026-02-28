@@ -1,6 +1,6 @@
 'use client';
-import { useAuth, useUser } from '@/firebase';
-import { signInAnonymously } from 'firebase/auth';
+import { useUser } from '@/firebase';
+import { signInAnonymously, getAuth } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
@@ -8,13 +8,14 @@ import { Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { getApps, initializeApp } from 'firebase/app';
+import { firebaseConfig } from '@/firebase/config';
 
 
 const USERNAME = 'khaled4ever';
 const PASSWORD = 'Kh738211';
 
 export default function LoginPage() {
-  const auth = useAuth();
   const { user, loading } = useUser();
   const router = useRouter();
 
@@ -36,17 +37,21 @@ export default function LoginPage() {
         return;
     }
     
-    if (!auth) {
-        setError('خدمة المصادقة غير جاهزة. يرجى المحاولة مرة أخرى.');
-        return;
-    };
-
     setIsSubmitting(true);
     setError('');
 
     try {
+      // Workaround: Initialize a fresh auth instance here to bypass potential context issues.
+      let app;
+      if (getApps().length === 0) {
+        app = initializeApp(firebaseConfig);
+      } else {
+        app = getApps()[0];
+      }
+      const auth = getAuth(app);
+
       await signInAnonymously(auth);
-      // The useEffect hook will now redirect to /dashboard once the user state is updated.
+      // The useUser hook will now redirect to /dashboard once its onAuthStateChanged listener fires.
     } catch (error) {
       console.error('Error signing in anonymously', error);
       setError('حدث خطأ أثناء تسجيل الدخول.');
