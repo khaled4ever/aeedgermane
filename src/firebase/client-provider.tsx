@@ -19,25 +19,31 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
     firestore: Firestore | null;
   }>({ firebaseApp: null, auth: null, firestore: null });
 
-  const [isConfigValid, setIsConfigValid] = useState(false);
+  // null: loading/undetermined, true: valid, false: invalid
+  const [isConfigValid, setIsConfigValid] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const configIsValid = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
-      setIsConfigValid(configIsValid);
-      if (configIsValid) {
-        const instances = initializeFirebase();
-        setFirebase({
-          firebaseApp: instances.firebaseApp,
-          auth: instances.auth,
-          firestore: instances.firestore,
-        });
-      }
+    // This effect runs only on the client, after the initial render.
+    const configIsValid = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
+    
+    if (configIsValid) {
+      const instances = initializeFirebase();
+      setFirebase({
+        firebaseApp: instances.firebaseApp,
+        auth: instances.auth,
+        firestore: instances.firestore,
+      });
     }
+    // We set the validity regardless, so we know when to show the error.
+    setIsConfigValid(configIsValid);
   }, []);
   
-  // This check avoids rendering the error during server-side rendering or if config is valid.
-  if (!isConfigValid && typeof window !== 'undefined') {
+  // During server-side rendering and the initial client render, isConfigValid is null.
+  // In this case, we render the children to ensure server and client match.
+  // Downstream components should handle the loading state (e.g., useUser hook).
+  if (isConfigValid === false) {
+    // This part will only run on the client after useEffect has determined the config is invalid.
+    // This avoids the hydration error.
     return (
         <div className="flex h-screen w-full items-center justify-center bg-background text-foreground p-4">
             <div className="max-w-3xl text-center rounded-lg border border-destructive bg-destructive/10 p-8">
@@ -64,6 +70,6 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
     );
   }
 
-
+  // Render children if config is valid or if its validity is not yet determined (isConfigValid === null).
   return <FirebaseProvider value={firebase}>{children}</FirebaseProvider>;
 }
