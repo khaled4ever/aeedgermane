@@ -83,15 +83,26 @@ export default function DashboardPage() {
             </TableRow>
             </TableHeader>
             <TableBody>
-            {sortedAdClicks.map((click) => (
-                <TableRow key={click.id}>
+            {sortedAdClicks.map((click) => {
+                const clickCount = (click.timestamps || []).length;
+                let rowClass = "";
+                if (clickCount > 3) {
+                    rowClass = "bg-destructive/10";
+                } else if (clickCount === 3) {
+                    rowClass = "bg-yellow-400/10";
+                } else if (clickCount === 1) {
+                    rowClass = "bg-green-400/10";
+                }
+
+                return (
+                <TableRow key={click.id} className={rowClass}>
                 <TableCell className="font-mono">{click.id}</TableCell>
                 <TableCell>
                     <Badge variant={click.status === 'banned' ? 'destructive' : 'secondary'}>
                     {click.status === 'banned' ? 'محظور' : 'مراقبة'}
                     </Badge>
                 </TableCell>
-                <TableCell className="text-center font-medium">{(click.timestamps || []).length}</TableCell>
+                <TableCell className="text-center font-medium">{clickCount}</TableCell>
                 <TableCell>
                   {click.timestamps?.length > 0 
                    ? new Date(click.timestamps[click.timestamps.length - 1].seconds * 1000).toLocaleString('ar-SA')
@@ -126,7 +137,8 @@ export default function DashboardPage() {
                     </DropdownMenu>
                 </TableCell>
                 </TableRow>
-            ))}
+                );
+            })}
             </TableBody>
         </Table>
         </div>
