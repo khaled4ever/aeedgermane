@@ -1,8 +1,9 @@
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { CheckCircle } from 'lucide-react';
 import type { Metadata } from 'next';
+import { servicesData } from '@/lib/services-data';
 
 export const metadata: Metadata = {
     title: 'خدمات صيانة السيارات | مركز الرشود',
@@ -12,51 +13,6 @@ export const metadata: Metadata = {
       canonical: '/الخدمات',
     },
 };
-
-const services = [
-  {
-    id: 'engine-gearbox',
-    title: 'صيانة المحركات والجيربوكس',
-    description: 'إصلاح وتوضيب جميع أنواع المحركات وناقلات الحركة الأوتوماتيكية بأيدي مهندسين متخصصين.',
-    image: PlaceHolderImages.find(i => i.id === 'service-engine'),
-    points: ['توضيب كامل للمحرك', 'إصلاح تسريبات الزيت', 'برمجة وصيانة الجيربوكس']
-  },
-  {
-    id: 'diagnostics',
-    title: 'فحص وتشخيص الأعطال',
-    description: 'نستخدم أحدث أجهزة الفحص والبرمجة لتحديد جميع الأعطال الميكانيكية والكهربائية بدقة عالية.',
-    image: PlaceHolderImages.find(i => i.id === 'service-diagnostics'),
-    points: ['فحص كمبيوتر شامل', 'تحديد أعطال الأنظمة الإلكترونية', 'تقارير فحص مفصلة']
-  },
-  {
-    id: 'periodic-maintenance',
-    title: 'خدمات الصيانة الدورية',
-    description: 'نقدم جميع خدمات الصيانة الدورية حسب توصيات المصنع للحفاظ على أداء وعمر سيارتك.',
-    image: PlaceHolderImages.find(i => i.id === 'service-oil'),
-    points: ['تغيير زيت المحرك والفلاتر', 'فحص وتغيير ماء الرديتر', 'فحص نظام التعليق']
-  },
-  {
-    id: 'brakes-suspension',
-    title: 'نظام الفرامل والتعليق',
-    description: 'صيانة وإصلاح أنظمة الفرامل والتعليق لضمان قيادة آمنة ومريحة.',
-    image: PlaceHolderImages.find(i => i.id === 'service-brakes'),
-    points: ['تغيير الفحمات والهوبات', 'إصلاح أنظمة ABS/ESP', 'وزن أذرعة ومقصات']
-  },
-  {
-    id: 'ac-repair',
-    title: 'إصلاح نظام التكييف',
-    description: 'فحص وإصلاح جميع مشاكل نظام التكييف، من ضعف التبريد إلى تسريبات الفريون.',
-    image: PlaceHolderImages.find(i => i.id === 'service-ac'),
-    points: ['تعبئة فريون أصلي', 'تنظيف دورة التكييف', 'إصلاح وتبديل الكمبروسر']
-  },
-  {
-    id: 'electrics-programming',
-    title: 'كهرباء وبرمجة السيارات',
-    description: 'حل جميع المشاكل الكهربائية المعقدة وبرمجة الوحدات الإلكترونية للسيارات الحديثة.',
-    image: PlaceHolderImages.find(i => i.id === 'service-transmission'),
-    points: ['برمجة اونلاين', 'إصلاح الظفائر الكهربائية', 'تركيب وبرمجة الإضافات']
-  },
-];
 
 export default function ServicesPage() {
   return (
@@ -73,34 +29,36 @@ export default function ServicesPage() {
       <div className="bg-background">
         <div className="container mx-auto px-4 py-16">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service, index) => (
-              <Card key={index} id={service.id} className="flex flex-col overflow-hidden transition-shadow hover:shadow-xl scroll-mt-24">
-                {service.image && (
-                  <div className="relative h-48 w-full">
-                    <Image
-                      src={service.image.imageUrl}
-                      alt={service.title}
-                      fill
-                      className="object-cover"
-                      data-ai-hint={service.image.imageHint}
-                    />
-                  </div>
-                )}
-                <CardHeader>
-                  <CardTitle className="font-headline">{service.title}</CardTitle>
-                  <CardDescription>{service.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <ul className="space-y-2">
-                    {service.points.map((point, pIndex) => (
-                      <li key={pIndex} className="flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                        <span className="text-sm text-muted-foreground">{point}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
+            {servicesData.map((service) => (
+              <Link href={`/الخدمات/${service.id}`} key={service.id} className="block h-full">
+                <Card className="flex flex-col overflow-hidden transition-shadow hover:shadow-xl h-full">
+                  {service.image && (
+                    <div className="relative h-48 w-full">
+                      <Image
+                        src={service.image.imageUrl}
+                        alt={service.title}
+                        fill
+                        className="object-cover"
+                        data-ai-hint={service.image.imageHint}
+                      />
+                    </div>
+                  )}
+                  <CardHeader>
+                    <CardTitle className="font-headline">{service.title}</CardTitle>
+                    <CardDescription>{service.shortDescription}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-grow">
+                    <ul className="space-y-2">
+                      {service.points.slice(0, 3).map((point, pIndex) => (
+                        <li key={pIndex} className="flex items-center gap-2">
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                          <span className="text-sm text-muted-foreground">{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         </div>

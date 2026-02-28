@@ -24,37 +24,10 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 import { SITE_CONFIG } from '@/app/config';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import React from 'react';
 import Autoplay from 'embla-carousel-autoplay';
 import { reportGtagConversion } from '@/lib/google-ads';
-
-const services = [
-  {
-    title: 'صيانة دورية',
-    description: 'نقدم خدمات صيانة دورية تشمل تغيير الزيوت والفلاتر للحفاظ على أداء سيارتك.',
-    image: PlaceHolderImages.find(i => i.id === 'service-oil'),
-    link: '/الخدمات#periodic-maintenance',
-  },
-  {
-    title: 'إصلاح المحركات',
-    description: 'متخصصون في إصلاح وتوضيب محركات السيارات الألمانية والأوروبية.',
-    image: PlaceHolderImages.find(i => i.id === 'service-engine'),
-    link: '/الخدمات#engine-gearbox',
-  },
-  {
-    title: 'كهرباء وفحص كمبيوتر',
-    description: 'فحص وإصلاح الأعطال الكهربائية وبرمجة كمبيوتر السيارة بأحدث الأجهزة.',
-    image: PlaceHolderImages.find(i => i.id === 'service-diagnostics'),
-    link: '/الخدمات#diagnostics',
-  },
-  {
-    title: 'فحص شامل',
-    description: 'خدمات فحص شامل للسيارة بما في ذلك نظام الفرامل للتأكد من سلامتها.',
-    image: PlaceHolderImages.find(i => i.id === 'service-brakes'),
-    link: '/الخدمات#brakes-suspension',
-  },
-];
+import { servicesData } from '@/lib/services-data';
 
 const whyUsItems = [
   {
@@ -84,6 +57,9 @@ const brandLogos: { [key: string]: string } = {
     'Land Rover': 'https://xn--ogbhrq.vip/wp-content/uploads/2026/02/landrover.svg',
     'Ferrari': 'https://xn--ogbhrq.vip/wp-content/uploads/2026/02/icons8-ferrari.svg'
 };
+
+const featuredServiceIds = ['periodic-maintenance', 'engine-gearbox', 'diagnostics', 'brakes-suspension'];
+const featuredServices = servicesData.filter(s => featuredServiceIds.includes(s.id));
 
 export default function Home() {
   const allBrands = [
@@ -184,8 +160,8 @@ export default function Home() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {services.map((service, index) => (
-              <Link href={service.link} key={index} className="block">
+            {featuredServices.map((service, index) => service && (
+              <Link href={`/الخدمات/${service.id}`} key={index} className="block">
                 <Card
                   className="overflow-hidden text-center transition-transform hover:scale-105 hover:shadow-lg h-full flex flex-col"
                 >
@@ -204,7 +180,7 @@ export default function Home() {
                     <CardTitle className="font-headline">{service.title}</CardTitle>
                   </CardHeader>
                   <CardContent className="flex-grow">
-                    <p className="text-muted-foreground">{service.description}</p>
+                    <p className="text-muted-foreground">{service.shortDescription}</p>
                   </CardContent>
                 </Card>
               </Link>
